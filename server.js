@@ -46,16 +46,15 @@ const server = http.createServer((req, res) => {
       });
 
       response.on('end', () => {
-        // Resolve base URL of the target page
         const baseUrl = new URL(targetUrl);
 
-        // Rewrite links in the fetched HTML
-        const rewrittenHtml = data.replace(/href="([^"]*)"/g, (match, href) => {
+        // Use regex to rewrite all hrefs
+        const rewrittenHtml = data.replace(/<a\s+[^>]*href="([^"]*)"/gi, (match, href) => {
           try {
-            const resolvedUrl = new URL(href, baseUrl).href; // Resolve relative links
-            return `href="/view?url=${encodeURIComponent(resolvedUrl)}"`;
-          } catch (err) {
-            return match; // Leave invalid links unchanged
+            const resolvedUrl = new URL(href, baseUrl).href; // Resolve the link
+            return match.replace(href, `/view?url=${encodeURIComponent(resolvedUrl)}`);
+          } catch {
+            return match; // Leave invalid or malformed links unchanged
           }
         });
 
