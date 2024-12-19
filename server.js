@@ -2,7 +2,7 @@ const http = require("http");
 
 // Create an HTTP server
 const server = http.createServer((req, res) => {
-  consol.log(req);
+  console.log(req);
   res.writeHead(200, { "Content-Type": "text/plain" });
   res.end("Hello, Render!\n");
 });
