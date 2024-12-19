@@ -51,6 +51,10 @@ const server = http.createServer((req, res) => {
         // Use regex to rewrite all hrefs
         const rewrittenHtml = data.replace(/<a\s+[^>]*href="([^"]*)"/gi, (match, href) => {
           try {
+            // If href is empty or just '/', keep it as a valid link
+            if (!href || href === '/') {
+              href = baseUrl.href;  // Convert to the base URL
+            }
             const resolvedUrl = new URL(href, baseUrl).href; // Resolve the link
             return match.replace(href, `/view?url=${encodeURIComponent(resolvedUrl)}`);
           } catch {
