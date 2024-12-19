@@ -48,18 +48,14 @@ const server = http.createServer((req, res) => {
       response.on('end', () => {
         const baseUrl = new URL(targetUrl);
 
-        // Use regex to rewrite all hrefs
+        // Use regex to find all hrefs and append /view?url= before the link
         const rewrittenHtml = data.replace(/<a\s+[^>]*href="([^"]*)"/gi, (match, href) => {
-          try {
-            // If href is empty or just '/', keep it as a valid link
-            if (!href || href === '/') {
-              href = baseUrl.href;  // Convert to the base URL
-            }
+          // Only rewrite href if it contains a valid link
+          if (href && href.trim() !== '') {
             const resolvedUrl = new URL(href, baseUrl).href; // Resolve the link
             return match.replace(href, `/view?url=${encodeURIComponent(resolvedUrl)}`);
-          } catch {
-            return match; // Leave invalid or malformed links unchanged
           }
+          return match; // Leave empty or invalid links unchanged
         });
 
         res.statusCode = 200;
