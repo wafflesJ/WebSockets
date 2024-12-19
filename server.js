@@ -1,4 +1,5 @@
 const http = require("http");
+const https = require("https"); // Include the https module
 
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && req.url === '/test') {
@@ -26,14 +27,11 @@ const server = http.createServer((req, res) => {
     });
 
   } else {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("Main html here\n");
-}
-  
-
+    // Handle other routes
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Main html here\n");
+  }
 });
-
-
 
 const PORT = process.env.PORT || 3000;
 
