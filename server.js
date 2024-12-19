@@ -1,13 +1,18 @@
 const http = require("http");
 const https = require("https"); // Include the https module
+const url = require("url");
 
 const server = http.createServer((req, res) => {
-  if (req.method === 'GET' && req.url === '/test') {
+  
+  const parsedUrl = url.parse(req.url, true);
+  const pathParts = parsedUrl.pathname.split('/').filter(Boolean);
+  
+  if (req.method === 'GET' && pathParts[0] === 'test' && pathParts[1]) {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html');
 
     // Make the HTTP request
-    https.get('https://www.york.ac.uk/teaching/cws/wws/webpage1.html', (response) => {
+    https.get(pathParts[1], (response) => {
       let data = '';
 
       // Collect data from the HTTP request
