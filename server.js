@@ -1,13 +1,12 @@
 const http = require("http");
 
 const server = http.createServer((req, res) => {
-  if (req.method === 'GET' && req.url === '/example') {
+  if (req.method === 'GET' && req.url === '/test') {
     res.statusCode = 200;
-    res.end("Test\n");
+    res.end(https.get('https://www.york.ac.uk/teaching/cws/wws/webpage1.html'));
   } else {
   res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end(https.get('https://www.google.ca/'));
-  
+  res.end("Main html here\n");
 }
   
 
