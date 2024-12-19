@@ -1,91 +1,42 @@
 const http = require("http");
 const https = require("https");
-const url = require("url");
 
 const server = http.createServer((req, res) => {
-  if (req.method === 'GET' && req.url === '/') {
-    // Serve the main HTML page
+  if (req.method === 'GET' && req.url === '/test') {
     res.statusCode = 200;
     res.setHeader('Content-Type', 'text/html');
-    res.end(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>URL Viewer</title>
-      </head>
-      <body>
-        <h1>Enter a URL to View</h1>
-        <form action="/view" method="GET">
-          <input type="text" name="url" placeholder="Enter URL here" required style="width: 300px;">
-          <button type="submit">View</button>
-        </form>
-        <hr>
-        <div id="result"></div>
-      </body>
-      </html>
-    `);
-  } else if (req.method === 'GET' && req.url.startsWith('/view')) {
-    // Parse the query string to get the URL
-    const parsedUrl = url.parse(req.url, true);
-    const targetUrl = parsedUrl.query.url;
 
-    if (!targetUrl) {
-      res.statusCode = 400;
-      res.end("Error: No URL provided.");
-      return;
-    }
-
-    // Fetch and rewrite the content of the target URL
-    https.get(targetUrl, (response) => {
+    // Make the HTTP request to fetch the page
+    https.get('https://www.york.ac.uk/teaching/cws/wws/webpage1.html', (response) => {
       let data = '';
 
+      // Collect data from the HTTP request
       response.on('data', (chunk) => {
         data += chunk;
       });
 
+      // Once the data is fully received, process and send it to the client
       response.on('end', () => {
-        const baseUrl = new URL(targetUrl);
-
-        // Use regex to find all hrefs and append /view?url= before the link
-        const rewrittenHtml = data.replace(/<a\s+[^>]*href="([^"]*)"/gi, (match, href) => {
-          // Only rewrite href if it contains a valid link
-          if (href && href.trim() !== '') {
-            const resolvedUrl = new URL(href, baseUrl).href; // Resolve the link
-            return match.replace(href, `/view?url=${encodeURIComponent(resolvedUrl)}`);
-          }
-          return match; // Leave empty or invalid links unchanged
+        // Modify all <a href="..."> URLs
+        const modifiedData = data.replace(/<a\s+[^>]*href="([^"]*)"/gi, (match, p1) => {
+          // Prepend '/view?url=' to the href value
+          const newHref = '/view?url=' + p1;
+          // Return the modified <a> tag
+          return match.replace(p1, newHref);
         });
 
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'text/html');
-        res.end(`
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>URL Viewer</title>
-          </head>
-          <body>
-            <h1>Viewing: ${targetUrl}</h1>
-            <a href="/">Back</a>
-            <hr>
-            ${rewrittenHtml}
-          </body>
-          </html>
-        `);
+        res.end(modifiedData); // Send the modified HTML content to the client
       });
 
     }).on('error', (err) => {
+      // Handle error if the request fails
       res.statusCode = 500;
-      res.end("Error fetching the URL: " + err.message);
+      res.end('Error: ' + err.message);
     });
 
   } else {
-    res.statusCode = 404;
-    res.end("404 Not Found");
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("Main html here\n");
   }
 });
 
