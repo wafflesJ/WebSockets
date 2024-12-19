@@ -1,0 +1,10 @@
+{
+  "name": "render-test",
+  "version": "1.0.0",
+  "description": "Simple server to test Render deployment",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {}
+}
