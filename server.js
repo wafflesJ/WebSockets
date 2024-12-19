@@ -37,7 +37,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    // Fetch and display the content of the target URL
+    // Fetch and rewrite the content of the target URL
     https.get(targetUrl, (response) => {
       let data = '';
 
@@ -46,6 +46,13 @@ const server = http.createServer((req, res) => {
       });
 
       response.on('end', () => {
+        // Rewrite links in the fetched HTML
+        const rewrittenHtml = data.replace(/href="([^"]*)"/g, (match, href) => {
+          // Make relative links absolute and update them to point to /view
+          const newUrl = url.resolve(targetUrl, href);
+          return `href="/view?url=${encodeURIComponent(newUrl)}"`;
+        });
+
         res.statusCode = 200;
         res.setHeader('Content-Type', 'text/html');
         res.end(`
@@ -60,7 +67,7 @@ const server = http.createServer((req, res) => {
             <h1>Viewing: ${targetUrl}</h1>
             <a href="/">Back</a>
             <hr>
-            ${data}
+            ${rewrittenHtml}
           </body>
           </html>
         `);
