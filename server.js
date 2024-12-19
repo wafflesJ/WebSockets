@@ -25,6 +25,10 @@ const server = http.createServer((req, res) => {
       res.end('Error: ' + err.message);
     });
 
+  } else {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("Main html here\n");
+}
   
 
 });
