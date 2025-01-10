@@ -4,19 +4,17 @@ const axios = require('axios');
 const app = express();
 
 // Define the target server (replace this with your desired target)
-const target = 'https://jsonplaceholder.typicode.com'; // Example API, replace with your actual target
+const target = 'https://poki.com'; // Example API, replace with your actual target
 
 // Proxy all requests to the target server
-app.use(
-  '/proxy', // You can change this path if needed
-  createProxyMiddleware({
-    target: target,
-    changeOrigin: true,
-    secure: true,
-    pathRewrite: { '^/proxy': '' }, // Optional: Clean up the proxy path
-    logLevel: 'debug',
-  })
-);
+app.use('*', createProxyMiddleware({
+  target: target,
+  changeOrigin: true,
+  secure: true,
+  logLevel: 'debug',
+}));
+
+
 
 // Intercept HTML pages and modify links and resources
 app.use(async (req, res, next) => {
