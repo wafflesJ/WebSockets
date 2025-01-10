@@ -15,8 +15,11 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Decode the URL before using it
+  const decodedTargetUrl = decodeURIComponent(targetUrl);
+
   // Choose the protocol (http or https) based on the target URL
-  const client = targetUrl.startsWith('https') ? https : http;
+  const client = decodedTargetUrl.startsWith('https') ? https : http;
 
   // Setup the request options
   const options = {
@@ -25,7 +28,7 @@ const server = http.createServer((req, res) => {
   };
 
   // Forward the request to the target server
-  const proxyRequest = client.request(targetUrl, options, (proxyResponse) => {
+  const proxyRequest = client.request(decodedTargetUrl, options, (proxyResponse) => {
     let body = '';
 
     // Collect data from the proxy response
