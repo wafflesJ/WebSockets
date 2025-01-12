@@ -131,7 +131,7 @@ let targetUrl;
 // Middleware to handle proxying requests
 app.use('/', async (req, res) => {
   try {
-    targetUrl = req.query.url; // Target URL passed as a query parameter
+    const targetUrl = req.query.url; // Get the target URL passed in the query string
 
     if (!targetUrl) {
       res.redirect('/main');
@@ -140,52 +140,34 @@ app.use('/', async (req, res) => {
 
     const parsedUrl = new URL(targetUrl);
 
-    // Add consent parameters (you can adjust these based on your needs)
-    const consentParams = {
-      gdpr: "true",               // Set according to the user consent status
-      gdpr_consent: "true",       // Set as needed
-      us_privacy: "1YNN",         // US privacy flag (adjust as needed)
-      // Add any other required consent parameters here
-    };
-
-    // Update the target URL with consent parameters
-    const targetUrlWithConsent = `${parsedUrl.origin}${parsedUrl.pathname}?${new URLSearchParams(consentParams).toString()}&${parsedUrl.searchParams}`;
-
     const options = {
       method: req.method,
       headers: {
         ...req.headers,
         Host: parsedUrl.host,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36', // Mimic a real browser
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36', // Mimicking a browser
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Referer': targetUrl,         // Mimic a real referer
-        'Origin': targetUrl,          // Mimic the origin of the request
-        'X-Requested-With': 'XMLHttpRequest',  // Indicate AJAX request
+        'Referer': targetUrl, // Sending the original referer
+        'Origin': targetUrl,  // Same as above
+        'X-Requested-With': 'XMLHttpRequest', // Signifies an AJAX request
       },
-      rejectUnauthorized: false,      // Disable SSL certificate validation if needed
-      followRedirect: true,           // Follow redirects
+      rejectUnauthorized: false,
+      followRedirect: true,
     };
 
-    // Choose the correct protocol (http or https)
+    // Choose the protocol (http or https) based on the target URL
     const proxy = parsedUrl.protocol === 'https:' ? https : http;
 
-    const proxyReq = proxy.request(targetUrlWithConsent, options, (proxyRes) => {
-      // Add CORS headers
+    const proxyReq = proxy.request(targetUrl, options, (proxyRes) => {
+      // Forward the response from the target server to the client
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
-    });
-
-    proxyReq.on('response', (proxyRes) => {
-      const contentType = proxyRes.headers['content-type'];
-      if (req.url.endsWith('.css') && contentType !== 'text/css') {
-        console.error(`Expected CSS but got ${contentType} for ${targetUrl}`);
-      }
     });
 
     // Pipe the request body for non-GET/HEAD methods
