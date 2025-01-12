@@ -137,33 +137,41 @@ app.use('/', async (req, res) => {
       res.redirect('/main');
       return;
     }
-    
 
     const parsedUrl = new URL(targetUrl);
+
+    // Add consent parameters (you can adjust these based on your needs)
+    const consentParams = {
+      gdpr: "true",               // Set according to the user consent status
+      gdpr_consent: "true",       // Set as needed
+      us_privacy: "1YNN",         // US privacy flag (adjust as needed)
+      // Add any other required consent parameters here
+    };
+
+    // Update the target URL with consent parameters
+    const targetUrlWithConsent = `${parsedUrl.origin}${parsedUrl.pathname}?${new URLSearchParams(consentParams).toString()}&${parsedUrl.searchParams}`;
 
     const options = {
       method: req.method,
       headers: {
         ...req.headers,
         Host: parsedUrl.host,
-        'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36', // Mimic a real browser
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Referer': targetUrl,  // Add a referer header
-        'Origin': targetUrl,   // Add an origin header
+        'Referer': targetUrl,         // Mimic a real referer
+        'Origin': targetUrl,          // Mimic the origin of the request
+        'X-Requested-With': 'XMLHttpRequest',  // Indicate AJAX request
       },
-      rejectUnauthorized: false,
-      followRedirect: true,
+      rejectUnauthorized: false,      // Disable SSL certificate validation if needed
+      followRedirect: true,           // Follow redirects
     };
-    
-    
-    
-    
 
+    // Choose the correct protocol (http or https)
     const proxy = parsedUrl.protocol === 'https:' ? https : http;
 
-    const proxyReq = proxy.request(parsedUrl, options, (proxyRes) => {
+    const proxyReq = proxy.request(targetUrlWithConsent, options, (proxyRes) => {
       // Add CORS headers
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -172,24 +180,15 @@ app.use('/', async (req, res) => {
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
     });
-    
 
     proxyReq.on('response', (proxyRes) => {
       const contentType = proxyRes.headers['content-type'];
-      console.log('Request Details:', req.method, req.url, req.headers);
-      console.log('Response Headers:', proxyRes.headers);
-      if (proxyRes.statusCode === 403) {
-        console.log('403 Forbidden response from target server');
-      }
-    
       if (req.url.endsWith('.css') && contentType !== 'text/css') {
         console.error(`Expected CSS but got ${contentType} for ${targetUrl}`);
       }
     });
-    
-    
-    
 
+    // Pipe the request body for non-GET/HEAD methods
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       req.pipe(proxyReq, { end: true });
     } else {
@@ -200,6 +199,7 @@ app.use('/', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+
 
 const PORT = 3000;
 app.listen(PORT, () => {
