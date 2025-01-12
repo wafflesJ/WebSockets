@@ -156,10 +156,11 @@ app.use('/', async (req, res) => {
     const proxy = parsedUrl.protocol === 'https:' ? https : http;
 
     const proxyReq = proxy.request(parsedUrl, options, (proxyRes) => {
-      const contentType = proxyRes.headers['content-type'];
-      if (contentType) {
-        res.setHeader('Content-Type', contentType); // Forward Content-Type
-      }
+      // Add CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
       proxyRes.pipe(res, { end: true });
     });
