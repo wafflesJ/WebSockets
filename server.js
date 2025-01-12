@@ -134,9 +134,10 @@ app.use('/', async (req, res) => {
     targetUrl = req.query.url; // Target URL passed as a query parameter
 
     if (!targetUrl) {
-      res.status(400).send('Error: No URL provided. Use ?url= to specify the target URL.');
+      res.redirect('/main');
       return;
     }
+    
 
     const parsedUrl = new URL(targetUrl);
 
