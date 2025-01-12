@@ -145,17 +145,18 @@ app.use('/', async (req, res) => {
       method: req.method,
       headers: {
         ...req.headers,
-        'Cookie': req.headers['cookie'] || '',
         Host: parsedUrl.host,
         'User-Agent': req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
         'Accept-Language': 'en-US,en;q=0.9',
         'Accept-Encoding': 'gzip, deflate, br',
         'Connection': 'keep-alive',
-        'Referer': targetUrl, // Add Referer header if needed
+        'Referer': targetUrl,  // Add a referer header
+        'Origin': targetUrl,   // Add an origin header
       },
       rejectUnauthorized: false,
       followRedirect: true,
     };
+    
     
     
     
@@ -175,10 +176,17 @@ app.use('/', async (req, res) => {
 
     proxyReq.on('response', (proxyRes) => {
       const contentType = proxyRes.headers['content-type'];
+      console.log('Request Details:', req.method, req.url, req.headers);
+      console.log('Response Headers:', proxyRes.headers);
+      if (proxyRes.statusCode === 403) {
+        console.log('403 Forbidden response from target server');
+      }
+    
       if (req.url.endsWith('.css') && contentType !== 'text/css') {
         console.error(`Expected CSS but got ${contentType} for ${targetUrl}`);
       }
     });
+    
     
     
 
