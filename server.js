@@ -8,13 +8,84 @@ const app = express();
 // Serve a simple webpage
 app.get('/main', (req, res) => {
   res.send(`
-    <h1>Welcome to the Proxy Server</h1>
-    <p>All your requests will be proxied through this server!</p>
-    <form action ="/">
-    <label for="query"></label>
-    <input type="text" id="query" name="url" placeholder="TYPE HERE!"><hr>
-    <input type="submit" value="Search!">
+  <!DOCTYPE html>
+<html>
+  <style>
+.button {
+  border: none;
+  background-color: #383838;
+  color: white;
+  padding: 16px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.buttonB {
+  border: none;
+  background-color: #116df7;
+  color: white;
+  padding: 8px 24px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.buttonB:hover {
+  background-color: #074eb8;
+}
+.forms {
+  margin-right: 20px;
+}
+
+.formsC {
+  display: flex;
+  justify-content: center;
+  position: absolute;   
+  bottom: 10px;    
+  left: 50%;    
+  transform: translateX(-50%); 
+}
+
+
+.button:hover {
+  background-color: #545454;
+}
+input[type=text] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid #ccc;
+  border-radius: 50px;
+  font-size: 16px;
+  background-color: white;
+  background-image: url('https://www.w3schools.com/css/searchicon.png');
+  background-position: 10px 10px; 
+  background-repeat: no-repeat;
+  padding: 12px 20px 12px 40px;
+}
+</style>
+  <h1 style="text-align: center;font-family: Arial, sans-serif; color:#303030; font-size:50px;">BaconLogic Proxy Server</h1>
+    <p style="text-align: center;font-family: Arial, sans-serif; font-size:20px;">Enter a URL to begin</p>
+    <form style="margin: 0 auto; text-align: center; "action ="/">
+    <input type="text" id="query" name="url" placeholder="Website URL"><br><br>
+    <input type="submit" value="Open"class="buttonB">
     </form>
+    <div class="formsC">
+    <form class="forms"action="https://proxy-server-7lmklzbjz-wafflesjs-projects.vercel.app/main/">
+    <input type="submit" value="Server 1"class="button" />
+    </form>
+    <form class="forms"action="https://websockets-3ihk.onrender.com/main/">
+    <input type="submit" value="Server 2"class="button" />
+    </form>
+    </div>
     <script>
       // Intercept all fetch requests in the client
       const originalFetch = window.fetch;
@@ -53,6 +124,7 @@ app.get('/main', (req, res) => {
       }
       
     </script>
+</html>
   `);
 });
 let targetUrl;
