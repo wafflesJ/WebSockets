@@ -2,6 +2,8 @@ const http = require('http');
 const https = require('https');
 const express = require('express');
 const { URL } = require('url');
+const zlib = require('zlib'); // For handling compressed responses
+const iconv = require('iconv-lite'); // For decoding non-UTF-8 content
 
 const app = express();
 
@@ -127,17 +129,17 @@ input[type=text] {
 </html>
   `);
 });
-let targetUrl;
+//let targetUrl;
 // Middleware to handle proxying requests
 app.use('/', async (req, res) => {
   try {
-    const targetUrl = req.query.url; // Get the target URL passed in the query string
+    const temp = req.query.url; // Get the target URL passed in the query string
 
-    if (!targetUrl) {
+    if (!temp) {
       res.redirect('/main');
       return;
     }
-
+    const targetUrl = req.query.url;
     const parsedUrl = new URL(targetUrl);
 
     const options = {
@@ -145,37 +147,115 @@ app.use('/', async (req, res) => {
       headers: {
         ...req.headers,
         Host: parsedUrl.host,
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36', // Mimicking a browser
-        'Accept-Language': 'en-US,en;q=0.9',
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
         'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Referer': targetUrl, // Sending the original referer
-        'Origin': targetUrl,  // Same as above
-        'X-Requested-With': 'XMLHttpRequest', // Signifies an AJAX request
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Sec-Fetch-User': '?1',
+        Connection: 'keep-alive',
+        Referer: targetUrl, // Make it seem like the request originates from the target site
       },
-      rejectUnauthorized: false,
-      followRedirect: true,
     };
+    
 
-    // Choose the protocol (http or https) based on the target URL
     const proxy = parsedUrl.protocol === 'https:' ? https : http;
 
     const proxyReq = proxy.request(targetUrl, options, (proxyRes) => {
-      // Forward the response from the target server to the client
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res, { end: true });
+      const contentType = proxyRes.headers['content-type'] || '';
+      const contentEncoding = proxyRes.headers['content-encoding'] || '';
+      const isText = contentType.includes('text') || contentType.includes('javascript');
+      let body = [];
+
+      proxyRes.on('data', (chunk) => body.push(chunk));
+      proxyRes.on('end', () => {
+        body = Buffer.concat(body);
+
+        // Decompress if necessary
+        if (contentEncoding === 'gzip') {
+          body = zlib.gunzipSync(body);
+        } else if (contentEncoding === 'deflate') {
+          body = zlib.inflateSync(body);
+        } else if (contentEncoding === 'br') {
+          body = zlib.brotliDecompressSync(body);
+        }
+
+        if (isText) {
+          // Decode the content using UTF-8 (or fallback to a detected encoding)
+          let decodedBody = iconv.decode(body, 'utf-8');
+
+          // Inject a script to modify content
+          const injectedScript = `
+          <script>
+          // Function to update URLs for elements
+          function updateUrls() {
+            document.querySelectorAll('a').forEach(a => {
+              if (a.href && !a.href.startsWith('http://localhost:3000/?url=')) {
+                a.href = 'http://localhost:3000/?url=' + encodeURIComponent(a.href);
+              }
+            });
+        
+            document.querySelectorAll('img').forEach(img => {
+              if (img.src && !img.src.startsWith('http://localhost:3000/?url=')) {
+                img.src = 'http://localhost:3000/?url=' + encodeURIComponent(img.src);
+              }
+            });
+        
+            document.querySelectorAll('iframe').forEach(iframe => {
+              if (iframe.src && !iframe.src.startsWith('http://localhost:3000/?url=')) {
+                iframe.src = 'http://localhost:3000/?url=' + encodeURIComponent(iframe.src);
+              }
+            });
+        
+            document.querySelectorAll('script[src]').forEach(script => {
+              if (script.src && !script.src.startsWith('http://localhost:3000/?url=')) {
+                script.src = 'http://localhost:3000/?url=' + encodeURIComponent(script.src);
+              }
+            });
+          }
+        
+          // Run once at initial load
+          updateUrls();
+        
+          // Observe DOM changes for dynamically added or modified elements
+          const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+              if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                updateUrls(); // Re-run the update function
+              }
+            });
+          });
+        
+          // Observe changes to the entire document body
+          observer.observe(document.body, {
+            childList: true, // Watch for added/removed nodes
+            subtree: true,   // Watch the entire subtree
+            attributes: true // Watch for attribute changes
+          });
+        
+          console.log('URLs and resources updated dynamically.');
+        </script>
+        
+          `;
+          decodedBody = decodedBody.replace('</body>', `${injectedScript}</body>`);
+          res.setHeader('X-Frame-Options', 'ALLOW-FROM *'); // Or specific domain
+          res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+
+          res.setHeader('Content-Type', contentType);
+          res.end(decodedBody);
+        } else {
+          // Forward binary responses unmodified
+          res.writeHead(proxyRes.statusCode, proxyRes.headers);
+          res.end(body);
+        }
+      });
     });
 
-    // Pipe the request body for non-GET/HEAD methods
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      req.pipe(proxyReq, { end: true });
-    } else {
-      proxyReq.end();
-    }
+    req.pipe(proxyReq, { end: true });
   } catch (err) {
     console.error('Error handling request:', err);
     res.status(500).send('Internal Server Error');
