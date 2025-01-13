@@ -129,6 +129,48 @@ input[type=text] {
 </html>
   `);
 });
+const handleImageRequest = async (imgUrl, res) => {
+  const parsedUrl = new URL(imgUrl);
+
+  const options = {
+    method: 'GET',
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Accept-Encoding': 'gzip, deflate, br',
+      'Connection': 'keep-alive',
+    },
+    rejectUnauthorized: false,
+    followRedirect: true,
+  };
+
+  const proxy = parsedUrl.protocol === 'https:' ? https : http;
+
+  proxy.request(imgUrl, options, (proxyRes) => {
+    let data = [];
+    
+    proxyRes.on('data', (chunk) => {
+      data.push(chunk);
+    });
+
+    proxyRes.on('end', () => {
+      // Send the image data to the client
+      res.setHeader('Content-Type', proxyRes.headers['content-type']);
+      res.setHeader('Cache-Control', 'public, max-age=86400');  // Cache the image for a day
+      res.end(Buffer.concat(data));
+    });
+  }).end();
+};
+
+// Middleware for /img path
+app.use('/img/', async (req, res) => {
+  const imgPath = req.params[0]; // Capture the image path
+  const imgUrl = decodeURIComponent(imgPath); // Decode the image URL
+  console.log("URL: "+imgUrl);
+  // Handle image request
+  handleImageRequest(imgUrl, res);
+});
+
 //let targetUrl;
 // Middleware to handle proxying requests
 app.use('/', async (req, res) => {
@@ -161,7 +203,7 @@ app.use('/', async (req, res) => {
         Referer: targetUrl, // Make it seem like the request originates from the target site
       },
     };
-    
+
 
     const proxy = parsedUrl.protocol === 'https:' ? https : http;
 
@@ -198,10 +240,23 @@ app.use('/', async (req, res) => {
                 a.href = 'http://localhost:3000/?url=' + encodeURIComponent(a.href);
               }
             });
+            document.querySelectorAll('link').forEach(link => {
+              if (link.href && !link.href.startsWith('http://localhost:3000/?url=')) {
+                link.href = 'http://localhost:3000/?url=' + encodeURIComponent(link.href);
+              }
+            });
+            document.querySelectorAll('meta').forEach(meta => {
+              if (meta.content && !meta.content.startsWith('http://localhost:3000/?url=')) {
+                meta.content = 'http://localhost:3000/?url=' + encodeURIComponent(meta.content);
+              }
+            });
         
             document.querySelectorAll('img').forEach(img => {
               if (img.src && !img.src.startsWith('http://localhost:3000/?url=')) {
                 img.src = 'http://localhost:3000/?url=' + encodeURIComponent(img.src);
+              }
+              if (img.srcset && !img.srcset.startsWith('http://localhost:3000/?url=')) {
+                img.srcset = 'http://localhost:3000/?url=' + encodeURIComponent(img.src);
               }
             });
         
@@ -243,7 +298,7 @@ app.use('/', async (req, res) => {
           `;
           decodedBody = decodedBody.replace('</body>', `${injectedScript}</body>`);
           res.setHeader('X-Frame-Options', 'ALLOW-FROM *'); // Or specific domain
-          res.setHeader('Content-Security-Policy', "frame-ancestors 'self' *");
+          res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';");
 
           res.setHeader('Content-Type', contentType);
           res.end(decodedBody);
