@@ -237,7 +237,10 @@ app.use('/', async (req, res) => {
           function updateUrls() {
             document.querySelectorAll('a').forEach(a => {
               if (a.href && !a.href.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                a.href = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(a.href);
+                if (a.href.startsWith(TARGETURL)) {
+                  a.href = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(a.href);
+                } else {
+                  a.href = 'https://websockets-3ihk.onrender.com/?url=TARGETURL/' + encodeURIComponent(a.href);
               }
             });
             document.querySelectorAll('link').forEach(link => {
