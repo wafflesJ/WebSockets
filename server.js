@@ -236,39 +236,39 @@ app.use('/', async (req, res) => {
           // Function to update URLs for elements
           function updateUrls() {
             document.querySelectorAll('a').forEach(a => {
-              if (a.href && !a.href.startsWith('http://localhost:3000/?url=')) {
-                a.href = 'http://localhost:3000/?url=' + encodeURIComponent(a.href);
+              if (a.href && !a.href.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                a.href = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(a.href);
               }
             });
             document.querySelectorAll('link').forEach(link => {
-              if (link.href && !link.href.startsWith('http://localhost:3000/?url=')) {
-                link.href = 'http://localhost:3000/?url=' + encodeURIComponent(link.href);
+              if (link.href && !link.href.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                link.href = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(link.href);
               }
             });
             document.querySelectorAll('meta').forEach(meta => {
-              if (meta.content && !meta.content.startsWith('http://localhost:3000/?url=')) {
-                meta.content = 'http://localhost:3000/?url=' + encodeURIComponent(meta.content);
+              if (meta.content && !meta.content.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                meta.content = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(meta.content);
               }
             });
         
             document.querySelectorAll('img').forEach(img => {
-              if (img.src && !img.src.startsWith('http://localhost:3000/?url=')) {
-                img.src = 'http://localhost:3000/?url=' + encodeURIComponent(img.src);
+              if (img.src && !img.src.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                img.src = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(img.src);
               }
-              if (img.srcset && !img.srcset.startsWith('http://localhost:3000/?url=')) {
-                img.srcset = 'http://localhost:3000/?url=' + encodeURIComponent(img.src);
+              if (img.srcset && !img.srcset.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                img.srcset = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(img.src);
               }
             });
         
             document.querySelectorAll('iframe').forEach(iframe => {
-              if (iframe.src && !iframe.src.startsWith('http://localhost:3000/?url=')) {
-                iframe.src = 'http://localhost:3000/?url=' + encodeURIComponent(iframe.src);
+              if (iframe.src && !iframe.src.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                iframe.src = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(iframe.src);
               }
             });
         
             document.querySelectorAll('script[src]').forEach(script => {
-              if (script.src && !script.src.startsWith('http://localhost:3000/?url=')) {
-                script.src = 'http://localhost:3000/?url=' + encodeURIComponent(script.src);
+              if (script.src && !script.src.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
+                script.src = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(script.src);
               }
             });
           }
