@@ -236,7 +236,7 @@ app.use('/', async (req, res) => {
           const injectedScript = `
           <script>
           // Function to update URLs for elements
-          const BASE_URL = "http://localhost:3000";//window.location.origin;
+          const BASE_URL = window.location.origin;
           const TARGETURL = "${targetUrl}";
           //TARGETURL.;
           
