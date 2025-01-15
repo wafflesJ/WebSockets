@@ -7,6 +7,10 @@ const iconv = require('iconv-lite'); // For decoding non-UTF-8 content
 
 const app = express();
 
+const cors = require('cors');
+
+app.use(cors({ origin: '*' }));
+
 // Serve a simple webpage
 app.get('/main', (req, res) => {
   res.send(`
@@ -234,44 +238,67 @@ app.use('/', async (req, res) => {
           const injectedScript = `
           <script>
           // Function to update URLs for elements
+          const BASE_URL = "http://localhost:3000";//window.location.origin;
+          const TARGETURL = "${targetUrl}";
+          //TARGETURL.;
+          
+          function getBaseUrl(targetUrl) {
+            try {
+              const url = new URL(targetUrl); // Create a URL object
+              return url.protocol+'//'+url.hostname+'/'; // Construct the base URL
+            } catch (error) {
+              console.error("Invalid URL:", error);
+              return null; // Return null for invalid URLs
+            }
+          }
+
+          function redir(link) {
+            if (!link.startsWith(BASE_URL)) {
+            return(BASE_URL+'/?url=' + encodeURIComponent(link));
+            } else {
+              return(BASE_URL+'/?url='+encodeURIComponent((TARGETURL + link).replace(BASE_URL, "")));
+            }
+          }
+          console.log((TARGETURL));
+          console.log(getBaseUrl(TARGETURL));
           function updateUrls() {
             document.querySelectorAll('a').forEach(a => {
-              if (a.href && !a.href.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                if (a.href.startsWith(TARGETURL)) {
-                  a.href = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(a.href);
-                } else {
-                  a.href = 'https://websockets-3ihk.onrender.com/?url=TARGETURL/' + encodeURIComponent(a.href);
-              }
+              if (a.href && !a.href.startsWith(BASE_URL+'/?url=')) {
+            
+                  a.href = redir(a.href);
+      
+            }
             });
+
             document.querySelectorAll('link').forEach(link => {
-              if (link.href && !link.href.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                link.href = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(link.href);
+              if (link.href && !link.href.startsWith(BASE_URL+'/?url=')) {
+                link.href=redir(link.href);
               }
             });
+
             document.querySelectorAll('meta').forEach(meta => {
-              if (meta.content && !meta.content.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                meta.content = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(meta.content);
+              if (meta.content && !meta.content.startsWith(BASE_URL+'/?url=')) {
+                meta.content = redir(meta.content);
               }
             });
         
             document.querySelectorAll('img').forEach(img => {
-              if (img.src && !img.src.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                img.src = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(img.src);
+              if (img.src && !img.src.startsWith(BASE_URL+'/?url=')) {
+                img.src = redir(img.src);
+                img.srcset = img.src;
               }
-              if (img.srcset && !img.srcset.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                img.srcset = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(img.src);
-              }
+              
             });
         
             document.querySelectorAll('iframe').forEach(iframe => {
-              if (iframe.src && !iframe.src.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                iframe.src = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(iframe.src);
+              if (iframe.src && !iframe.src.startsWith(BASE_URL+'/?url=')) {
+                iframe.src = redir(iframe.src);
               }
             });
         
             document.querySelectorAll('script[src]').forEach(script => {
-              if (script.src && !script.src.startsWith('https://websockets-3ihk.onrender.com/?url=')) {
-                script.src = 'https://websockets-3ihk.onrender.com/?url=' + encodeURIComponent(script.src);
+              if (script.src && !script.src.startsWith(BASE_URL+'/?url=')) {
+                script.src = redir(script.src);
               }
             });
           }
