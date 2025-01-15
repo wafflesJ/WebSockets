@@ -6,7 +6,7 @@ const zlib = require('zlib'); // For handling compressed responses
 const iconv = require('iconv-lite'); // For decoding non-UTF-8 content
 
 const app = express();
-
+const PORT = 3000;
 
 
 // Serve a simple webpage
@@ -212,7 +212,8 @@ app.use('/', async (req, res) => {
     const proxyReq = proxy.request(targetUrl, options, (proxyRes) => {
       const contentType = proxyRes.headers['content-type'] || '';
       const contentEncoding = proxyRes.headers['content-encoding'] || '';
-      const isText = contentType.includes('text') || contentType.includes('javascript');
+      let isText = !contentType.includes('text');
+      //isText=false;
       let body = [];
 
       proxyRes.on('data', (chunk) => body.push(chunk));
@@ -227,11 +228,11 @@ app.use('/', async (req, res) => {
         } else if (contentEncoding === 'br') {
           body = zlib.brotliDecompressSync(body);
         }
-        
-        if (isText) {
+        let decodedBody = iconv.decode(body, 'utf-8');
+        /*if (contentType.includes('text/html')) {
           // Decode the content using UTF-8 (or fallback to a detected encoding)
-          let decodedBody = iconv.decode(body, 'utf-8');
-          console.log(decodedBody);
+          
+          //console.log(decodedBody);
           // Inject a script to modify content
           const injectedScript = `
           <script>
@@ -325,16 +326,51 @@ app.use('/', async (req, res) => {
         
           `;
           decodedBody = decodedBody.replace('</body>', `${injectedScript}</body>`);
-          res.setHeader('X-Frame-Options', 'ALLOW-FROM *'); // Or specific domain
-          res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';");
+          
+      
+        } */
+         if (
+        contentType.includes('text') || 
+        contentType.includes('html') || 
+        contentType.includes('json') || 
+        contentType.includes('javascript') || 
+        contentType.includes('xml') || 
+        contentType.includes('css') || 
+        contentType.includes('svg')) {
+          // rewrite all urls
+          const attrRegex = /\b(?:src|srcset|href)\s*=\s*["']([^"']+)["']/g;
+
+          //console.log('Initial decodedBody:', decodedBody);
+          //decodedBody=`<iframe id="gameframe" src="https://5dd312fa-015f-11ea-ad56-9cb6d0d995f7.poki-gdn.com/1c3fbad8-25a2-4bb8-99f4-8316f3c0ee98/index.html?country=CA&amp;ccpaApplies=0&amp;url_referrer=https%3A%2F%2Fgames.poki.com%2F5dd312fa-015f-11ea-ad56-9cb6d0d995f7%3Ftag%3Dpg-a71990fcdd36876b08fbf8fb6714fc78645c0f19%26amp%3Bsite_id%3D3%26amp%3Biso_lang%3Den%26amp%3Bcountry%3DCA%26amp%3Bpoki_url%3Dhttps%3A%2F%2Fpoki.com%2Fen%2Fg%2Fsubway-surfers%26amp%3Bhoist%3Dyes%26amp%3BnonPersonalized%3Dn%26amp%3BfamilyFriendly%3Dn%26amp%3Bcategories%3D3%2C4%2C6%2C9%2C86%2C88%2C93%2C96%2C103%2C228%2C903%2C929%2C1103%2C1126%2C1137%2C1140%2C1143%2C1147%2C1156%2C1159%2C1160%2C1163%2C1177%2C1185%2C1190%2C1193%26amp%3Bexperiment%3Dtest-959a0db8%26amp%3Bspecial_condition%3Dlanding&amp;tag=pg-a71990fcdd36876b08fbf8fb6714fc78645c0f19&amp;amp%3Bsite_id=3&amp;amp%3Biso_lang=en&amp;amp%3Bcountry=CA&amp;amp%3Bpoki_url=https%3A%2F%2Fpoki.com%2Fen%2Fg%2Fsubway-surfers&amp;amp%3Bhoist=yes&amp;amp%3BnonPersonalized=n&amp;amp%3BfamilyFriendly=n&amp;amp%3Bcategories=3%2C4%2C6%2C9%2C86%2C88%2C93%2C96%2C103%2C228%2C903%2C929%2C1103%2C1126%2C1137%2C1140%2C1143%2C1147%2C1156%2C1159%2C1160%2C1163%2C1177%2C1185%2C1190%2C1193&amp;amp%3Bexperiment=test-959a0db8&amp;amp%3Bspecial_condition=landing&amp;game_id=5dd312fa-015f-11ea-ad56-9cb6d0d995f7&amp;game_version_id=1c3fbad8-25a2-4bb8-99f4-8316f3c0ee98&amp;inspector=0&amp;csp=1" allow="autoplay; camera; focus-without-user-activation *; monetization; gamepad; keyboard-map *; xr-spatial-tracking; clipboard-write; web-share; accelerometer; magnetometer; gyroscope; display-capture" scrolling="no"></iframe>`;
+          decodedBody = decodedBody.replace(attrRegex, (match, url) => {
+            
+            let old=url;
+            // Handle protocol-relative URLs (e.g., //a.poki-cdn.com/t2.js)
+            if (url.startsWith('//')) {
+              console.log("HERE");
+               url = 'https:' + url; // or 'http:' if you want to force HTTP instead of HTTPS
+            }
+            console.log('match:', match);
+            console.log('url:', url); // Extracted URL
+            console.log('new url:', redir(url,targetUrl)); // Extracted URL
+            return match.replace(old, redir(url,targetUrl));
+          });
+          
+
+
+              res.setHeader('X-Frame-Options', 'ALLOW-FROM *'); // Or specific domain
+              res.setHeader('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; style-src 'self' 'unsafe-inline';");
+    
+              res.setHeader('Content-Type', contentType);
+              res.end(decodedBody);
+        } else {
+         
 
           res.setHeader('Content-Type', contentType);
-          res.end(decodedBody);
-        } else {
-          // Forward binary responses unmodified
-          res.writeHead(proxyRes.statusCode, proxyRes.headers);
           res.end(body);
         }
+  
+         
       });
     });
 
@@ -344,9 +380,28 @@ app.use('/', async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 });
+function getBaseUrl(target) {
+  try {
+    const url = new URL(target); // Create a URL object
+    return url.protocol+'//'+url.hostname+'/'; // Construct the base URL
+  } catch (error) {
+    console.error("Invalid URL:", error);
+    return null; // Return null for invalid URLs
+  }
+}
+const BASE_URL=`http://localhost:${PORT}`;
+function redir(link,targetUrl) {
+  if (!link.startsWith(BASE_URL+'/?url=')) {
+    if (!link.startsWith("/")) {
+      //console.log("LINK: ",link);
+  return(BASE_URL+'/?url=' + encodeURIComponent(link));
+  } else {
+    return(BASE_URL+'/?url='+encodeURIComponent((targetUrl + link).replace(BASE_URL, "")));
+  }
+}
+}
 
 
-const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Proxy server is running at http://localhost:${PORT}`);
 });
