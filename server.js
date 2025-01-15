@@ -7,9 +7,7 @@ const iconv = require('iconv-lite'); // For decoding non-UTF-8 content
 
 const app = express();
 
-const cors = require('cors');
 
-app.use(cors({ origin: '*' }));
 
 // Serve a simple webpage
 app.get('/main', (req, res) => {
@@ -229,11 +227,11 @@ app.use('/', async (req, res) => {
         } else if (contentEncoding === 'br') {
           body = zlib.brotliDecompressSync(body);
         }
-
+        
         if (isText) {
           // Decode the content using UTF-8 (or fallback to a detected encoding)
           let decodedBody = iconv.decode(body, 'utf-8');
-
+          console.log(decodedBody);
           // Inject a script to modify content
           const injectedScript = `
           <script>
