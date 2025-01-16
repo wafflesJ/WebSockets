@@ -229,7 +229,7 @@ app.use('/', async (req, res) => {
           body = zlib.brotliDecompressSync(body);
         }
         let decodedBody = iconv.decode(body, 'utf-8');
-        /*if (contentType.includes('text/html')) {
+        if (contentType.includes('text/html')) {
           // Decode the content using UTF-8 (or fallback to a detected encoding)
           
           //console.log(decodedBody);
@@ -328,7 +328,7 @@ app.use('/', async (req, res) => {
           decodedBody = decodedBody.replace('</body>', `${injectedScript}</body>`);
           
       
-        } */
+        } 
          if (
         contentType.includes('text') || 
         contentType.includes('html') || 
