@@ -389,7 +389,7 @@ function getBaseUrl(target) {
     return null; // Return null for invalid URLs
   }
 }
-const BASE_URL=`http://localhost:${PORT}`;
+const BASE_URL=`https://websockets-3ihk.onrender.com`;
 function redir(link,targetUrl) {
   if (!link.startsWith(BASE_URL+'/?url=')) {
     if (!link.startsWith("/")) {
