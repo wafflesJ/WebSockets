@@ -162,7 +162,7 @@ app.use('/', async (req, res) => {
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      if(req.url.endsWith('.css')) proxyRes.pipe(res, { end: true });
+      if(!req.url.endsWith('.css')) proxyRes.pipe(res, { end: true });
     });
     
 
