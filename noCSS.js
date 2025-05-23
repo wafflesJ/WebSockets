@@ -162,14 +162,15 @@ app.use('/', async (req, res) => {
       res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
       
       res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      proxyRes.pipe(res, { end: true });
+      if(req.url.endsWith('.css')) proxyRes.pipe(res, { end: true });
     });
     
 
     proxyReq.on('response', (proxyRes) => {
       const contentType = proxyRes.headers['content-type'];
-      if (req.url.endsWith('.css') && contentType !== 'text/css') {
-        console.error(`Expected CSS but got ${contentType} for ${targetUrl}`);
+      if (req.url.endsWith('.css') || contentType == 'text/css') {
+        console.log(`Got CSS`);
+        
       }
     });
     
