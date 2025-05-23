@@ -1,0 +1,192 @@
+const http = require('http');
+const https = require('https');
+const express = require('express');
+const { URL } = require('url');
+
+const app = express();
+
+// Serve a simple webpage
+app.get('/main', (req, res) => {
+  res.send(`
+  <!DOCTYPE html>
+<html>
+  <style>
+.button {
+  border: none;
+  background-color: #383838;
+  color: white;
+  padding: 16px 32px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.buttonB {
+  border: none;
+  background-color: #116df7;
+  color: white;
+  padding: 8px 24px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+  margin: 4px 2px;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  border-radius: 6px;
+}
+.buttonB:hover {
+  background-color: #074eb8;
+}
+.forms {
+  margin-right: 20px;
+}
+
+.formsC {
+  display: flex;
+  justify-content: center;
+  position: absolute;   
+  bottom: 10px;    
+  left: 50%;    
+  transform: translateX(-50%); 
+}
+
+
+.button:hover {
+  background-color: #545454;
+}
+input[type=text] {
+  width: 100%;
+  box-sizing: border-box;
+  border: 2px solid #ccc;
+  border-radius: 50px;
+  font-size: 16px;
+  background-color: white;
+  background-image: url('https://www.w3schools.com/css/searchicon.png');
+  background-position: 10px 10px; 
+  background-repeat: no-repeat;
+  padding: 12px 20px 12px 40px;
+}
+</style>
+  <h1 style="text-align: center;font-family: Arial, sans-serif; color:#303030; font-size:50px;">BaconLogic Proxy Server</h1>
+    <p style="text-align: center;font-family: Arial, sans-serif; font-size:20px;">Enter a URL to begin</p>
+    <form style="margin: 0 auto; text-align: center; "action ="/">
+    <input type="text" id="query" name="url" placeholder="Website URL"><br><br>
+    <input type="submit" value="Open"class="buttonB">
+    </form>
+    <div class="formsC">
+    <form class="forms"action="https://proxy-server-7lmklzbjz-wafflesjs-projects.vercel.app/main/">
+    <input type="submit" value="Server 1"class="button" />
+    </form>
+    <form class="forms"action="https://websockets-3ihk.onrender.com/main/">
+    <input type="submit" value="Server 2"class="button" />
+    </form>
+    </div>
+    <script>
+      // Intercept all fetch requests in the client
+      const originalFetch = window.fetch;
+      window.fetch = async (input, init) => {
+        let url = typeof input === 'string' ? input : input.url;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          return originalFetch(input, init);
+        }\${encodeURIComponent(url)};
+        return originalFetch(proxiedUrl, init);
+      };
+
+      // Intercept image loading
+      document.querySelectorAll('img').forEach(img => {
+        const originalSrc = img.src;
+        img.src = \${encodeURIComponent(originalSrc)};
+      });
+      
+
+      async function SENDURL() {
+        const inputText = document.getElementById('inputText').value;
+
+      try {
+        const response = await fetch('/?url='+inputText, {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error(\`HTTP error! status: \${response.status}\`);
+        }
+
+        const data = await response.json();
+        document.getElementById('responseMessage').textContent = \`Response: \${data.message}\`;
+      } catch (error) {
+        document.getElementById('responseMessage').textContent = \`Error: \${error.message}\`;
+      }
+      }
+      
+    </script>
+</html>
+  `);
+});
+let targetUrl;
+// Middleware to handle proxying requests
+app.use('/', async (req, res) => {
+  try {
+    targetUrl = req.query.url; // Target URL passed as a query parameter
+
+    if (!targetUrl) {
+      res.redirect('/main');
+      return;
+    }
+    
+
+    const parsedUrl = new URL(targetUrl);
+
+    const options = {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        Host: parsedUrl.host,
+      },
+      rejectUnauthorized: false,
+      followRedirect: true, // Follow redirects
+    };
+    
+    
+
+    const proxy = parsedUrl.protocol === 'https:' ? https : http;
+
+    const proxyReq = proxy.request(parsedUrl, options, (proxyRes) => {
+      // Add CORS headers
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      
+      res.writeHead(proxyRes.statusCode, proxyRes.headers);
+      proxyRes.pipe(res, { end: true });
+    });
+    
+
+    proxyReq.on('response', (proxyRes) => {
+      const contentType = proxyRes.headers['content-type'];
+      if (req.url.endsWith('.css') && contentType !== 'text/css') {
+        console.error(`Expected CSS but got ${contentType} for ${targetUrl}`);
+      }
+    });
+    
+    
+
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      req.pipe(proxyReq, { end: true });
+    } else {
+      proxyReq.end();
+    }
+  } catch (err) {
+    console.error('Error handling request:', err);
+    res.status(500).send('Internal Server Error');
+  }
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Proxy server is running at http://localhost:${PORT}`);
+});
