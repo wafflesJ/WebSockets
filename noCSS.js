@@ -177,7 +177,7 @@ app.use('/', async (req, res) => {
     
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      req.pipe(proxyReq, { end: true });
+      if(!req.url.endsWith('.css'))req.pipe(proxyReq, { end: true });
     } else {
       proxyReq.end();
     }
