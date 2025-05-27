@@ -65,7 +65,7 @@ app.get('/', (req, res) => {
                     if (html.includes('<head>')) {
                       html = html.replace('<head>', '<base href="'+url+'"><head>');
                     } else {
-                      html += <base href="'+url+'">';
+                      html += '<base href="'+url+'">';
                     }
                     
                     frame.srcdoc = html;
