@@ -33,7 +33,7 @@ app.get('/', (req, res) => {
                   url = document.getElementById("input").value;
                 } else
                  url = event;
-                fetch('http://localhost:3000/load', {
+                fetch('/load', {
                   method: 'POST',
                   headers: {
                     'Content-Type': 'application/json'
