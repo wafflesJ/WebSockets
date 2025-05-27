@@ -67,13 +67,13 @@ app.get('/', (req, res) => {
                     } else {
                       html += '<base href="'+url+'">';
                     }
-                    
-                    frame.srcdoc = html;
+                    frame.src=url;
+                    //frame.srcdoc = html;
                   })
                   .catch(err => console.error('Fetch failed:', err));
                   frame.onload = () => {
                   const doc = frame.contentDocument || frame.contentWindow.document;
-              
+                  Run(frame.src,false);
                   
                 };
                 window.addEventListener('message', event => {
