@@ -58,9 +58,14 @@ app.get('/', (req, res) => {
                     \`;
                     text.textContent=html;
                     if (html.includes('</body>')) {
-                      html = html.replace('<base href="'+url+'></body>', interceptionScript + '</body>');
+                      html = html.replace(</body>, interceptionScript + '</body>');
                     } else {
                       html += interceptionScript;
+                    }
+                    if (html.includes('<head>')) {
+                      html = html.replace(<head>, '<base href="'+url+'"><head>');
+                    } else {
+                      html += <base href="'+url+'">';
                     }
                     
                     frame.srcdoc = html;
