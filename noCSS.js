@@ -2,190 +2,127 @@ const http = require('http');
 const https = require('https');
 const express = require('express');
 const { URL } = require('url');
+const bodyParser = require('body-parser');
+const cheerio = require('cheerio'); // npm install cheerio
 
 const app = express();
+app.use(bodyParser.json());
 
 // Serve a simple webpage
-app.get('/main', (req, res) => {
+app.get('/', (req, res) => {
   res.send(`
-  <!DOCTYPE html>
-<html>
-  <style>
-.button {
-  border: none;
-  background-color: #383838;
-  color: white;
-  padding: 16px 32px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin: 4px 2px;
-  transition-duration: 0.4s;
-  cursor: pointer;
-  border-radius: 6px;
-}
-.buttonB {
-  border: none;
-  background-color: #116df7;
-  color: white;
-  padding: 8px 24px;
-  text-align: center;
-  text-decoration: none;
-  display: inline-block;
-  font-size: 16px;
-  margin: 4px 2px;
-  transition-duration: 0.4s;
-  cursor: pointer;
-  border-radius: 6px;
-}
-.buttonB:hover {
-  background-color: #074eb8;
-}
-.forms {
-  margin-right: 20px;
-}
-
-.formsC {
-  display: flex;
-  justify-content: center;
-  position: absolute;   
-  bottom: 10px;    
-  left: 50%;    
-  transform: translateX(-50%); 
-}
-
-
-.button:hover {
-  background-color: #545454;
-}
-input[type=text] {
-  width: 100%;
-  box-sizing: border-box;
-  border: 2px solid #ccc;
-  border-radius: 50px;
-  font-size: 16px;
-  background-color: white;
-  background-image: url('https://www.w3schools.com/css/searchicon.png');
-  background-position: 10px 10px; 
-  background-repeat: no-repeat;
-  padding: 12px 20px 12px 40px;
-}
-</style>
-  <h1 style="text-align: center;font-family: Arial, sans-serif; color:#303030; font-size:50px;">BaconLogic Proxy Server</h1>
-    <p style="text-align: center;font-family: Arial, sans-serif; font-size:20px;">Enter a URL to begin</p>
-    <form style="margin: 0 auto; text-align: center; "action ="/">
-    <input type="text" id="query" name="url" placeholder="Website URL"><br><br>
-    <input type="submit" value="Open"class="buttonB">
-    </form>
-    <div class="formsC">
-    <form class="forms"action="https://proxy-server-7lmklzbjz-wafflesjs-projects.vercel.app/main/">
-    <input type="submit" value="Server 1"class="button" />
-    </form>
-    <form class="forms"action="https://websockets-3ihk.onrender.com/main/">
-    <input type="submit" value="Server 2"class="button" />
-    </form>
-    </div>
-    <script>
-      // Intercept all fetch requests in the client
-      const originalFetch = window.fetch;
-      window.fetch = async (input, init) => {
-        let url = typeof input === 'string' ? input : input.url;
-        if (!url.startsWith('http://') && !url.startsWith('https://')) {
-          return originalFetch(input, init);
-        }\${encodeURIComponent(url)};
-        return originalFetch(proxiedUrl, init);
-      };
-
-      // Intercept image loading
-      document.querySelectorAll('img').forEach(img => {
-        const originalSrc = img.src;
-        img.src = \${encodeURIComponent(originalSrc)};
-      });
-      
-
-      async function SENDURL() {
-        const inputText = document.getElementById('inputText').value;
-
-      try {
-        const response = await fetch('/?url='+inputText, {
-          method: 'GET',
-        });
-
-        if (!response.ok) {
-          throw new Error(\`HTTP error! status: \${response.status}\`);
-        }
-
-        const data = await response.json();
-        document.getElementById('responseMessage').textContent = \`Response: \${data.message}\`;
-      } catch (error) {
-        document.getElementById('responseMessage').textContent = \`Error: \${error.message}\`;
-      }
-      }
-      
-    </script>
+  <html>
+  <body>
+        
+        <div style="display: flex; height: 100%;">
+          <div style="width: 60%;">
+            <form onsubmit="Run(event,true)">
+              <input type="text" id="input">
+            </form>
+            <iframe id="frame" width="95%" height="90%"></iframe>
+          </div>
+          <p style="width: 40%; height: 100%; word-wrap: break-word; overflow-wrap: break-word; white-space: normal;overflow-y: auto;" id="text"></p>
+        </div>
+        <script>
+            const frame = document.getElementById("frame");
+            const text = document.getElementById("text");
+            function Run(event,stop) {
+                let url;
+                if(stop) {
+                  event.preventDefault();
+                  url = document.getElementById("input").value;
+                } else
+                 url = event;
+                fetch('http://localhost:3000/load', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ target: url })
+                })
+                  .then(response => response.text())
+                  .then(html => {
+                    // The script to inject, as a string
+                    const interceptionScript = \`
+                    <script>
+                        document.addEventListener('click', function(event) {
+                          const anchor = event.target.closest('a');
+                          if (anchor) {
+                            event.preventDefault();
+                            console.log('Intercepted link click:', anchor.href);
+                            window.parent.postMessage({ clickedUrl: anchor.href }, '*');
+                          }
+                        });
+                      <\\/script>
+                      
+                    \`;
+                    text.textContent=html;
+                    if (html.includes('</body>')) {
+                      html = html.replace('<base href="'+url+'></body>', interceptionScript + '</body>');
+                    } else {
+                      html += interceptionScript;
+                    }
+                    
+                    frame.srcdoc = html;
+                  })
+                  .catch(err => console.error('Fetch failed:', err));
+                  frame.onload = () => {
+                  const doc = frame.contentDocument || frame.contentWindow.document;
+              
+                  
+                };
+                window.addEventListener('message', event => {
+                  // You can check event.origin if you want to restrict source origins
+                  if (event.data.clickedUrl) {
+                    console.log('Link clicked inside iframe:', event.data.clickedUrl);
+                    Run(event.data.clickedUrl,false);
+                  }
+                });
+            }
+        </script>
+    </body>
 </html>
   `);
 });
-let targetUrl;
 // Middleware to handle proxying requests
-app.use('/', async (req, res) => {
+app.post('/load', async (req, res) => {
+  const targetUrl = req.body.target;
+  if (!targetUrl) return res.status(400).send('Missing "target"');
+
+  let parsedUrl;
   try {
-    targetUrl = req.query.url; // Target URL passed as a query parameter
-
-    if (!targetUrl) {
-      res.redirect('/main');
-      return;
-    }
-    
-
-    const parsedUrl = new URL(targetUrl);
-
-    const options = {
-      method: req.method,
-      headers: {
-        ...req.headers,
-        Host: parsedUrl.host,
-      },
-      rejectUnauthorized: false,
-      followRedirect: true, // Follow redirects
-    };
-    
-    
-
-    const proxy = parsedUrl.protocol === 'https:' ? https : http;
-
-    const proxyReq = proxy.request(parsedUrl, options, (proxyRes) => {
-      // Add CORS headers
-      res.setHeader('Access-Control-Allow-Origin', '*');
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-      
-      res.writeHead(proxyRes.statusCode, proxyRes.headers);
-      if(!req.url.endsWith('.css')) proxyRes.pipe(res, { end: true });
-    });
-    
-
-    proxyReq.on('response', (proxyRes) => {
-      const contentType = proxyRes.headers['content-type'];
-      if (req.url.endsWith('.css') || contentType == 'text/css') {
-        console.log(`Got CSS`);
-        
-      }
-    });
-    
-    
-
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      if(!req.url.endsWith('.css'))req.pipe(proxyReq, { end: true });
-    } else {
-      proxyReq.end();
-    }
-  } catch (err) {
-    console.error('Error handling request:', err);
-    res.status(500).send('Internal Server Error');
+    parsedUrl = new URL(targetUrl);
+  } catch (e) {
+    return res.status(400).send('Invalid URL');
   }
+
+  const proxy = parsedUrl.protocol === 'https:' ? https : http;
+
+  proxy.get(targetUrl, (proxyRes) => {
+    let html = '';
+    proxyRes.on('data', chunk => html += chunk);
+    proxyRes.on('end', () => {
+      // Use cheerio to rewrite relative URLs
+      const $ = cheerio.load(html);
+
+      $('link[href], script[src], img[src], a[href]').each((_, el) => {
+        const attr = el.tagName === 'a' ? 'href' : 'src' in el.attribs ? 'src' : 'href';
+        const val = $(el).attr(attr);
+        if (val && !val.startsWith('http') && !val.startsWith('//') && !val.startsWith('data:')) {
+          const abs = new URL(val, parsedUrl).href;
+          $(el).attr(attr, abs);
+        }
+      });
+
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.send($.html());
+    });
+  }).on('error', err => {
+    console.error(err);
+    res.status(500).send('Error fetching page');
+  });
 });
+
 
 const PORT = 3000;
 app.listen(PORT, () => {
