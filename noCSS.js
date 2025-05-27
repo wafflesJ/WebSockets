@@ -12,8 +12,7 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
   res.send(`
   <html>
-  <body>
-        
+    <body>  
         <div style="display: flex; height: 100%;">
           <div style="width: 60%;">
             <form onsubmit="Run(event,true)">
@@ -67,7 +66,7 @@ app.get('/', (req, res) => {
                     } else {
                       html += '<base href="'+url+'">';
                     }
-                    frame.src=url;
+                    if(frame.src!=url) frame.src=url;
                     //frame.srcdoc = html;
                   })
                   .catch(err => console.error('Fetch failed:', err));
